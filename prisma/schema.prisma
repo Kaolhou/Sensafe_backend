@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String                      @id @default(uuid())
+  email                  String                      @unique
+  password               String
+  firstName              String
+  lastName               String
+  recordType             UserRecordType
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  devices                Device[]
+  relationshipsAsParent  ParentPatientRelationship[] @relation("ParentUser")
+  relationshipsAsPatient ParentPatientRelationship[] @relation("PatientUser")
+}
+
+model ParentPatientRelationship {
+  parentId   String
+  patientId  String
+  assignedAt DateTime @default(now())
+  parent     User     @relation("ParentUser", fields: [parentId], references: [id], onDelete: Cascade)
+  patient    User     @relation("PatientUser", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, patientId])
+}
+
+model Device {
+  id           String        @id @default(cuid())
+  name         String?
+  serialNumber String        @unique
+  status       String?
+  patientId    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  patient      User          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  geolocations Geolocation[]
+}
+
+model Geolocation {
+  id        String   @id @default(cuid())
+  latitude  Float
+  longitude Float
+  timestamp DateTime @default(now())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+}
+
+enum UserRecordType {
+  PARENT
+  PATIENT
+}
