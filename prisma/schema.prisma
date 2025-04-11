@@ -20,6 +20,9 @@ model User {
   devices                Device[]
   relationshipsAsParent  ParentPatientRelationship[] @relation("ParentUser")
   relationshipsAsPatient ParentPatientRelationship[] @relation("PatientUser")
+
+  preferences            UserPreferences?
+  sessions               UserSession[]
 }
 
 model ParentPatientRelationship {
@@ -54,6 +57,41 @@ model Geolocation {
 
   @@index([deviceId])
 }
+
+model UserSession {
+  id        String   @id @default(cuid()) 
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) 
+}
+
+model UserPreferences {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+
+  fontSize              Int?
+  batterySaverLevel     Int?      
+  theme                 String?   // Example: 'light', 'dark', 'system'
+  language              String?   // Example: 'en', 'pt-BR'
+  notificationsEnabled  Boolean   @default(true)
+  // Add other preference fields as needed
+  // e.g., dataSaverMode Boolean @default(false)
+  // e.g., mapType String? // 'roadmap', 'satellite'
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relation back to the User model
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional index, though @unique already creates one
+  // @@index([userId])
+}
+
 
 enum UserRecordType {
   PARENT

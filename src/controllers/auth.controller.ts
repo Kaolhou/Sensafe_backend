@@ -68,8 +68,33 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
+    let sessionDurationMs = 24 * 60 * 60 * 1000;
+    sessionDurationMs *= newUser.recordType == 'PARENT' ? 1 : 7;
+
+    const expiresAt = new Date(Date.now() + sessionDurationMs);
+
+    const newSession = await prisma.userSession.create({
+      data: {
+        userId: newUser.id,
+        expiresAt: expiresAt,
+      },
+      select: {
+        id: true,
+        expiresAt: true,
+      },
+    });
+
+    const token = generateToken({
+      id: newUser.id,
+      email: newUser.email,
+      recordType: newUser.recordType,
+      sessionId: newSession.id,
+      expiresAt: newSession.expiresAt,
+    });
+
     res
       .status(201)
+      .setHeader('Set-Cookie',token)
       .json({ message: 'User registered successfully', user: newUser });
   } catch (error) {
     console.error('Registration error:', error);
@@ -99,14 +124,33 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const payload = {
+    const sessionDurationMs = 24 * 60 * 60 * 1000; 
+    const expiresAt = new Date(Date.now() + sessionDurationMs);
+
+    const newSession = await prisma.userSession.create({
+      data: {
+        userId: user.id,
+        expiresAt: expiresAt,
+      },
+      select: {
+        id: true,
+        expiresAt: true,
+      }
+    });
+    
+
+    const token = generateToken({
       id: user.id,
       email: user.email,
       recordType: user.recordType,
-    };
-    const token = generateToken(payload);
+      sessionId: newSession.id,
+      expiresAt: newSession.expiresAt,
+    });
 
-    res.json({ token });
+    res
+      .status(200)
+      .setHeader('Set-Cookie',token)
+      .json({ message: 'User logged in successfully', id:user.id});
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'An error occurred during login' });
