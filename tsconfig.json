@@ -6,8 +6,9 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
+    "baseUrl": ".",
     "paths": {
-      "@generated":["./src/generated/prisma"]
+      "@generated": ["src/generated/prisma"]
     }
   },
   "include": ["src"]

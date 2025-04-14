@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { PrismaClient, UserRecordType } from '@generated';
+import { PrismaClient, UserRecordType } from '../generated/prisma';
 import { generateToken } from '../utils/generateToken';
 
 const prisma = new PrismaClient();
@@ -28,12 +28,10 @@ const loginUserSchema = z.object({
 export const register = async (req: Request, res: Response) => {
   const validationResult = registerUserSchema.safeParse(req.body);
   if (!validationResult.success) {
-    return res
-      .status(400)
-      .json({
-        message: 'Validation failed',
-        errors: validationResult.error.flatten().fieldErrors,
-      });
+    return res.status(400).json({
+      message: 'Validation failed',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
   }
 
   const { email, password, recordType, firstName, lastName } =
@@ -94,7 +92,7 @@ export const register = async (req: Request, res: Response) => {
 
     res
       .status(201)
-      .setHeader('Set-Cookie',token)
+      .setHeader('Set-Cookie', token)
       .json({ message: 'User registered successfully', user: newUser });
   } catch (error) {
     console.error('Registration error:', error);
@@ -105,12 +103,10 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   const validationResult = loginUserSchema.safeParse(req.body);
   if (!validationResult.success) {
-    return res
-      .status(400)
-      .json({
-        message: 'Validation failed',
-        errors: validationResult.error.flatten().fieldErrors,
-      });
+    return res.status(400).json({
+      message: 'Validation failed',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
   }
 
   const { email, password } = validationResult.data;
@@ -124,7 +120,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const sessionDurationMs = 24 * 60 * 60 * 1000; 
+    const sessionDurationMs = 24 * 60 * 60 * 1000;
     const expiresAt = new Date(Date.now() + sessionDurationMs);
 
     const newSession = await prisma.userSession.create({
@@ -135,9 +131,8 @@ export const login = async (req: Request, res: Response) => {
       select: {
         id: true,
         expiresAt: true,
-      }
+      },
     });
-    
 
     const token = generateToken({
       id: user.id,
@@ -149,8 +144,8 @@ export const login = async (req: Request, res: Response) => {
 
     res
       .status(200)
-      .setHeader('Set-Cookie',token)
-      .json({ message: 'User logged in successfully', id:user.id});
+      .setHeader('Set-Cookie', token)
+      .json({ message: 'User logged in successfully', id: user.id });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'An error occurred during login' });

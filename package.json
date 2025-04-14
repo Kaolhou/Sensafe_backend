@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "format": "prettier --write .",
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": "Kaolhou",
@@ -34,5 +36,14 @@
     "prisma": "^6.6.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }
