@@ -18,6 +18,7 @@ model User {
   createdAt              DateTime                    @default(now())
   updatedAt              DateTime                    @updatedAt
   devices                Device[]
+  phoneNumber            String?
   relationshipsAsParent  ParentPatientRelationship[] @relation("ParentUser")
   relationshipsAsPatient ParentPatientRelationship[] @relation("PatientUser")
 

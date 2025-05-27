@@ -28,22 +28,30 @@ const registerUserSchema = z
     deviceName: z.string().optional(),
     latitude: z.number().optional(),
     longitude: z.number().optional(),
+    phoneNumber: z.string().optional(), // Adicionado phoneNumber como opcional
   })
   .superRefine((data, ctx) => {
-    if (data.recordType === UserRecordType.PATIENT && !data.parentEmail) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Parent email is required when record type is PATIENT',
-        path: ['parentEmail'],
-      });
-    }
     if (data.recordType === UserRecordType.PATIENT) {
+      if (!data.parentEmail) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Parent email is required when record type is PATIENT',
+          path: ['parentEmail'],
+        });
+      }
       if (!data.serialNumber) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
             'Device serial number is required when record type is PATIENT',
           path: ['serialNumber'],
+        });
+      }
+      if (!data.deviceName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Device name is required when record type is PATIENT',
+          path: ['deviceName'],
         });
       }
       if (typeof data.latitude !== 'number') {
@@ -61,50 +69,11 @@ const registerUserSchema = z
         });
       }
     } else if (data.recordType === UserRecordType.PARENT) {
-      // PARENT não deve ter campos de paciente/dispositivo
-      if (data.parentEmail) {
+      if (!data.phoneNumber) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            'Parent email should not be provided when record type is PARENT',
-          path: ['parentEmail'],
-        });
-      }
-      if (data.serialNumber) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            'Device serial number should not be provided when record type is PARENT',
-          path: ['serialNumber'],
-        });
-      }
-      if (data.deviceName) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            'Device name should not be provided when record type is PARENT',
-          path: ['deviceName'],
-        });
-      }
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'Parent email should not be provided when record type is PARENT',
-        path: ['parentEmail'],
-      });
-      if (typeof data.latitude === 'number') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Latitude should not be provided when record type is PARENT',
-          path: ['latitude'],
-        });
-      }
-      if (typeof data.longitude === 'number') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            'Longitude should not be provided when record type is PARENT',
-          path: ['longitude'],
+          message: 'Phone number is required when record type is PARENT',
+          path: ['phoneNumber'],
         });
       }
     }
@@ -117,6 +86,7 @@ const loginUserSchema = z.object({
 
 export const register = async (req: Request, res: Response) => {
   const validationResult = registerUserSchema.safeParse(req.body);
+  console.log(validationResult.error);
   if (!validationResult.success) {
     return res.status(400).json({
       message: 'Validation failed',
@@ -135,6 +105,7 @@ export const register = async (req: Request, res: Response) => {
     deviceName, // Novo campo
     latitude, // Novo campo
     longitude, // Novo campo
+    phoneNumber, // Novo campo
   } = validationResult.data;
 
   try {
@@ -184,6 +155,7 @@ export const register = async (req: Request, res: Response) => {
           recordType,
           firstName,
           lastName,
+          ...(phoneNumber && { phoneNumber }), // Adiciona phoneNumber se existir
         },
         select: {
           id: true,
