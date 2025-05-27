@@ -39,7 +39,7 @@ model ParentPatientRelationship {
 model Device {
   id           String        @id @default(cuid())
   name         String?
-  serialNumber String        @unique
+  serialNumber String
   status       String?
   patientId    String
   createdAt    DateTime      @default(now())
