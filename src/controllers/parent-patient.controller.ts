@@ -162,11 +162,17 @@ export const getRelationshipsByPatientId = async (
       where: { patientId },
       include: {
         parent: {
-          select: { id: true, firstName: true, lastName: true, email: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
         },
       },
     });
-    res.status(200).json(relationships);
+    res.status(200).json(relationships.map((rel) => rel.parent));
   } catch (error) {
     console.error('Error fetching relationships by patient ID:', error);
     res.status(500).json({

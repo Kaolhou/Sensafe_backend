@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient, UserRecordType } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -18,8 +18,10 @@ const createGeolocationSchema = z.object({
 });
 
 // Schema para validar o parâmetro serialNumber ao buscar a última geolocalização
-const getLatestGeolocationParamsSchema = z.object({
-  serialNumber: z.string().min(1, 'Serial number parameter is required'),
+// Schema para validar o parâmetro patientId ao buscar a última geolocalização
+const getLatestGeolocationByPatientParamsSchema = z.object({
+  // patientId é geralmente um UUID
+  patientId: z.string().uuid({ message: 'Invalid Patient ID format' }),
 });
 
 /**
@@ -41,8 +43,11 @@ export const createGeolocation = async (req: Request, res: Response) => {
 
   try {
     // 1. Encontrar o dispositivo pelo serialNumber
-    const device = await prisma.device.findUnique({
+    const device = await prisma.device.findFirst({
       where: { serialNumber },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     if (!device) {
@@ -84,9 +89,8 @@ export const getLatestGeolocationByDevice = async (
   req: Request,
   res: Response
 ) => {
-  const paramsValidationResult = getLatestGeolocationParamsSchema.safeParse(
-    req.params
-  );
+  const paramsValidationResult =
+    getLatestGeolocationByPatientParamsSchema.safeParse(req.params);
 
   if (!paramsValidationResult.success) {
     return res.status(400).json({
@@ -95,18 +99,31 @@ export const getLatestGeolocationByDevice = async (
     });
   }
 
-  const { serialNumber } = paramsValidationResult.data;
+  const { patientId } = paramsValidationResult.data;
 
   try {
     // 1. Encontrar o dispositivo pelo serialNumber
-    const device = await prisma.device.findUnique({
-      where: { serialNumber },
-      select: { id: true }, // Só precisamos do ID para a próxima query
+    // 1. Verificar se o paciente (usuário do tipo PATIENT) existe
+    const patientUser = await prisma.user.findUnique({
+      where: { id: patientId, recordType: UserRecordType.PATIENT },
+    });
+
+    if (!patientUser) {
+      return res
+        .status(404)
+        .json({ message: `Patient with ID '${patientId}' not found.` });
+    }
+    const device = await prisma.device.findFirst({
+      where: { patientId: patientId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: { id: true, serialNumber: true }, // Só precisamos do ID para a próxima query
     });
 
     if (!device) {
       return res.status(404).json({
-        message: `Device with serial number '${serialNumber}' not found.`,
+        message: `Device not found.`,
       });
     }
 
@@ -122,7 +139,7 @@ export const getLatestGeolocationByDevice = async (
 
     if (!latestGeolocation) {
       return res.status(404).json({
-        message: `No geolocation data found for device '${serialNumber}'.`,
+        message: `No geolocation data found for device '${device.serialNumber}'.`,
       });
     }
 

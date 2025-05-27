@@ -10,9 +10,9 @@ import {
 const router = Router();
 
 router.post('/', createRelationship);
-router.get('/parent/:parentId', getRelationshipsByParentId);
+router.get('/parent/:parentId/patients', getRelationshipsByParentId);
 router.get('/patient/:patientId/parents', getRelationshipsByPatientId);
-router.get('/:parentId/:patientId/patients', getRelationship);
+router.get('/:parentId/:patientId', getRelationship);
 router.delete('/:parentId/:patientId', deleteRelationship);
 
 export default router;

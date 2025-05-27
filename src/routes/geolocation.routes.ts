@@ -13,9 +13,9 @@ const router = Router();
 // Idealmente, proteja esta rota para que apenas dispositivos autenticados possam enviar dados
 router.post('/', /* isAuthenticated, */ createGeolocation);
 
-// GET /api/geolocations/latest/:serialNumber
+// GET /api/geolocations/latest/:patientId
 // Idealmente, proteja esta rota para que apenas usuários autorizados (ex: o PARENT do PATIENT dono do device)
 // possam ver a localização.
-router.get('/latest/:serialNumber', getLatestGeolocationByDevice);
+router.get('/latest/:patientId', getLatestGeolocationByDevice);
 
 export default router;
